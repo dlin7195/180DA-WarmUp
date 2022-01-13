@@ -3,6 +3,9 @@
 # https://www.geeksforgeeks.org/filter-color-with-opencv/
 # https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html
 
+# for drawing bounding boxes during video capture, this stack overflow post was very helpful:
+# https://stackoverflow.com/questions/35533538/creating-bounding-box-across-an-object-in-a-video
+
 import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
@@ -34,18 +37,25 @@ while True:
     # Bitwise-AND mask and original image
     res = cv.bitwise_and(frame,frame, mask= mask)
 
-    #contours, hierarchy = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    #cnt = contours[0]
-    #cv.drawContours(res, [cnt], 0, (0,255,0), 3)
-    # couldn't figure out this part yet --> in progress
+    # blur and threshold res to get better edges
+    blur = cv.blur(res, (12,12))
+    grey = cv.cvtColor(blur, cv.COLOR_HSV2BGR)
+    grey = cv.cvtColor(grey, cv.COLOR_BGR2GRAY)
 
-    # bounding box on res
-    #x,y,w,h = cv.boundingRect(cnt)
-    #cv.rectangle(res,(x,y),(x+w,y+h),(0,255,0),2)
+    ret,thresh = cv.threshold(grey,20,255,0)
+
+    # find contours
+    contours, hierarchy = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    # draw bounding boxes
+    for cnt in contours:
+        x,y,w,h = cv.boundingRect(cnt)
+        cv.rectangle(res,(x,y),(x+w,y+h),(0,255,0),2)
 
     cv.imshow('frame',frame)
     cv.imshow('mask',mask)
     cv.imshow('res',res)
+    #cv.imshow('thresh',thresh)
 
     # Display the resulting frame
     #cv.imshow('frame', hsv)
